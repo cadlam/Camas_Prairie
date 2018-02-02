@@ -1,0 +1,776 @@
+---
+title: "CAMAS_TEST"
+output:
+  html_notebook:
+    number_sections: yes
+    toc: yes
+    toc_float: yes
+  html_document:
+    df_print: paged
+    toc: yes
+---
+```{r include = FALSE}
+# Load packages
+library(tidyverse)
+library(styler)
+library(emmeans)
+```
+# Load the data
+
+```{r include = FALSE}
+# This loads the data
+data_1 <- read.csv("/Users/christopheradlam/Desktop/Davis/R/GitHub Repos/Camas_Prairie/Data/CP_Camas_data.csv")
+# table(data_1$NUMBER_CAMAS)
+# data_1$NUMBER_CAMAS == 4
+# data_1$PLOT_ID[data_1$NUMBER_CAMAS < 40]
+```
+
+# Subsetting the data (if necessary)
+```{r include = FALSE}
+# Subsetting the data
+# data_1 <- data_1[-c(8, 19, 26, 27, 31, 32), ]
+data_1 <- subset(data_1, TREATMENT == "C", select = c(PLOT_NUMBER, TREATMENT, NUMBER_CAMAS, PLOT_ID, AVG_LVS, AVG_FL, NUMBER_SCAPES))
+data_1 <- subset(data_1, PLOT_NUMBER != 10, select = c(PLOT_NUMBER, TREATMENT, NUMBER_CAMAS, PLOT_ID, AVG_LVS, AVG_FL, NUMBER_SCAPES))
+
+# better than subset maybe:
+# data_1 %>% filter(NUMBER_CAMAS>200)
+```
+
+# Making plots to look for trends
+```{r}
+# Looking for relationships between above ground variables
+plot(data_1$NUMBER_CAMAS, data_1$NUMBER_SCAPES)
+abline(fit <- lm(data_1$NUMBER_SCAPES~data_1$NUMBER_CAMAS), col = "red")
+legend("topright", bty = "n", legend = paste("R =", format(summary(fit)$r.squared, digits = 4)))
+
+plot(data_1$NUMBER_CAMAS, data_1$AVG_LVS)
+abline(fit <- lm(data_1$AVG_LVS~data_1$NUMBER_CAMAS), col = "red")
+legend("topright", bty = "n", legend = paste("R =", format(summary(fit)$r.squared, digits = 4)))
+
+plot(data_1$NUMBER_SCAPES, data_1$AVG_LVS)
+abline(fit <- lm(data_1$AVG_LVS~data_1$NUMBER_SCAPES), col = "red")
+legend("topright", bty = "n", legend = paste("R =", format(summary(fit)$r.squared, digits = 4)))
+
+plot(data_1$NUMBER_CAMAS, data_1$AVG_FL)
+abline(fit <- lm(data_1$AVG_FL~data_1$NUMBER_CAMAS), col = "red")
+legend("topright", bty = "n", legend = paste("R =", format(summary(fit)$r.squared, digits = 4)))
+
+plot(data_1$NUMBER_SCAPES, data_1$AVG_FL)
+abline(fit <- lm(data_1$AVG_FL~data_1$NUMBER_SCAPES), col = "red")
+legend("topright", bty = "n", legend = paste("R =", format(summary(fit)$r.squared, digits = 4)))
+
+plot(data_1$AVG_LVS, data_1$AVG_FL)
+abline(fit <- lm(data_1$AVG_FL~data_1$AVG_LVS), col = "red")
+legend("topright", bty = "n", legend = paste("R =", format(summary(fit)$r.squared, digits = 4)))
+
+# Making a scatterplot matrix with p and r values in upper triangle
+panel.cor <- function(x, y, digits = 2, cex.cor, ...) {
+  usr <- par("usr")
+  on.exit(par(usr))
+  par(usr = c(0, 1, 0, 1))
+  # correlation coefficient
+  r <- cor(x, y)
+  txt <- format(c(r, 0.123456789), digits = digits)[1]
+  txt <- paste("r= ", txt, sep = "")
+  text(0.5, 0.6, txt)
+
+  # p-value calculation
+  p <- cor.test(x, y)$p.value
+  txt2 <- format(c(p, 0.123456789), digits = digits)[1]
+  txt2 <- paste("p= ", txt2, sep = "")
+  if (p < 0.01) txt2 <- paste("p= ", "<0.01", sep = "")
+  text(0.5, 0.4, txt2)
+}
+
+lines <- function(x, y) {
+  points(x, y, pch = ".")
+  abline(lm(x~y), col = "red")
+}
+
+pairs(
+  ~AVG_LVS + AVG_FL + NUMBER_SCAPES + NUMBER_CAMAS, data = data_1,
+  main = "Simple Scatterplot Matrix", upper.panel = panel.cor, lower.panel = panel.smooth, panel = lines
+)
+```
+
+```{r}
+# control, unfiltered
+data_1 <- read.csv("/Users/christopheradlam/Desktop/Davis/R/GitHub Repos/Camas_Prairie/Data/CP_Camas_data.csv")
+data_1 <- subset(data_1, TREATMENT == "C", select = c(TREATMENT, NUMBER_CAMAS, PLOT_ID, AVG_LVS, AVG_FL, NUMBER_SCAPES, PLOT_NUMBER))
+
+# filter?
+data_1 <- data_1[-c(8, 19, 26, 27, 31, 32), ]
+
+
+plot(data_1$NUMBER_CAMAS, data_1$NUMBER_SCAPES)
+abline(fit <- lm(data_1$NUMBER_SCAPES~data_1$NUMBER_CAMAS), col = "red")
+legend("topright", bty = "n", legend = paste("R =", format(summary(fit)$r.squared, digits = 4)))
+
+plot(data_1$NUMBER_CAMAS, data_1$AVG_LVS)
+abline(fit <- lm(data_1$AVG_LVS~data_1$NUMBER_CAMAS), col = "red")
+legend("topright", bty = "n", legend = paste("R =", format(summary(fit)$r.squared, digits = 4)))
+
+plot(data_1$NUMBER_SCAPES, data_1$AVG_LVS)
+abline(fit <- lm(data_1$AVG_LVS~data_1$NUMBER_SCAPES), col = "red")
+legend("topright", bty = "n", legend = paste("R =", format(summary(fit)$r.squared, digits = 4)))
+
+plot(data_1$NUMBER_CAMAS, data_1$AVG_FL)
+abline(fit <- lm(data_1$AVG_FL~data_1$NUMBER_CAMAS), col = "red")
+legend("topright", bty = "n", legend = paste("R =", format(summary(fit)$r.squared, digits = 4)))
+
+plot(data_1$NUMBER_SCAPES, data_1$AVG_FL)
+abline(fit <- lm(data_1$AVG_FL~data_1$NUMBER_SCAPES), col = "red")
+legend("topright", bty = "n", legend = paste("R =", format(summary(fit)$r.squared, digits = 4)))
+
+plot(data_1$AVG_LVS, data_1$AVG_FL)
+abline(fit <- lm(data_1$AVG_FL~data_1$AVG_LVS), col = "red")
+legend("topright", bty = "n", legend = paste("R =", format(summary(fit)$r.squared, digits = 4)))
+```
+
+```{r}
+# dig, changes over time after harvest
+data_1 <- read.csv("/Users/christopheradlam/Desktop/Davis/R/GitHub Repos/Camas_Prairie/Data/CP_Camas_data.csv")
+data_1 <- subset(data_1, TREATMENT == "T", select = c(TREATMENT, NUMBER_CAMAS, PLOT_ID, AVG_LVS, AVG_FL, NUMBER_SCAPES, YR_POST_HARVEST, PLOT_NUMBER, RATIO_FL))
+
+# filter?
+# data_1 <- data_1[-c(8, 19, 26, 27, 31, 32), ]
+data_1 <- subset(data_1, PLOT_NUMBER != 10, select = c(PLOT_NUMBER, TREATMENT, NUMBER_CAMAS, PLOT_ID, AVG_LVS, AVG_FL, NUMBER_SCAPES, YR_POST_HARVEST, RATIO_FL))
+
+plot(data_1$YR_POST_HARVEST, data_1$NUMBER_CAMAS)
+abline(fit <- lm(data_1$NUMBER_CAMAS~data_1$YR_POST_HARVEST), col = "red")
+legend("topright", bty = "n", legend = paste("R =", format(summary(fit)$r.squared, digits = 4)))
+
+plot(data_1$YR_POST_HARVEST, data_1$AVG_LVS)
+abline(fit <- lm(data_1$YR_POST_HARVEST~data_1$AVG_LVS), col = "red")
+legend("topright", bty = "n", legend = paste("R =", format(summary(fit)$r.squared, digits = 4)))
+
+plot(data_1$YR_POST_HARVEST, data_1$NUMBER_SCAPES)
+abline(fit <- lm(data_1$YR_POST_HARVEST~data_1$NUMBER_SCAPES), col = "red")
+legend("topright", bty = "n", legend = paste("R =", format(summary(fit)$r.squared, digits = 4)))
+
+plot(data_1$YR_POST_HARVEST, data_1$AVG_FL)
+abline(fit <- lm(data_1$YR_POST_HARVEST~data_1$AVG_FL), col = "red")
+legend("topright", bty = "n", legend = paste("R =", format(summary(fit)$r.squared, digits = 4)))
+
+plot(data_1$YR_POST_HARVEST, data_1$RATIO_FL)
+abline(fit <- lm(data_1$YR_POST_HARVEST~data_1$RATIO_FL), col = "red")
+legend("topright", bty = "n", legend = paste("R =", format(summary(fit)$r.squared, digits = 4)))
+```
+
+## Separating out the data from each variety into a vector. Want to analyze by year, compare T vs C, NUMBER_CAMAS, then NUMBER_SCAPES, then NUMBER_FLOWERS.
+```{r}
+# YR1, NUMBER_CAMAS.
+YR1 <- subset(data_1, YR_POST_HARVEST == 1, select = c(TREATMENT, NUMBER_CAMAS, PLOT_ID))
+CONTROL_YR1 <- YR1$NUMBER_CAMAS[YR1$TREATMENT == "C"]
+DIG_YR1 <- YR1$NUMBER_CAMAS[YR1$TREATMENT == "T"]
+
+# transform data?
+# YR1$log_NUM <- log(YR1$NUMBER_CAMAS)
+
+library(emmeans)
+YR1$PLOT_ID <- as.character(YR1$PLOT_ID)
+model_1 <- lm(NUMBER_CAMAS ~ TREATMENT, data = YR1) # fit the model
+
+# model with treatment differences
+differences_model1 <- emmeans(model_1, pairwise~TREATMENT) # `pairwise~Variety` means calculate all pairwise differences among varieties
+summary(differences_model1, level = 0.90, infer = c(T, F))$contrast
+
+# Model diagnostic plots
+library(ggplot2)
+ggplot(YR1, aes(x = TREATMENT, y = NUMBER_CAMAS)) + geom_boxplot() + geom_jitter(width = .2)
+
+par(mfrow = c(1, 2)) # necessary to get two plots next to each other
+plot(model_1, which = c(2, 5)) # there are several diagnostic plots that R can make. For simple experiments, these two are good.
+
+# t-test
+t.test(CONTROL_YR1, DIG_YR1, paired = T)
+```
+
+
+```{r}
+# YR1, NUMBER_SCAPES
+YR1 <- subset(data_1, YR_POST_HARVEST == 1, select = c(TREATMENT, NUMBER_SCAPES, PLOT_ID))
+CONTROL_YR1 <- YR1$NUMBER_SCAPES[YR1$TREATMENT == "C"]
+DIG_YR1 <- YR1$NUMBER_SCAPES[YR1$TREATMENT == "T"]
+
+library(emmeans)
+# YR1$NUMBER_SCAPES <- log(YR1$NUMBER_SCAPES)
+YR1$PLOT_ID <- as.character(YR1$PLOT_ID)
+model_1 <- lm(NUMBER_SCAPES ~ TREATMENT, data = YR1) # fit the model
+
+# model with treatment differences
+differences_model1 <- emmeans(model_1, pairwise~TREATMENT) # `pairwise~Variety` means calculate all pairwise differences among varieties
+summary(differences_model1, level = 0.90, infer = c(T, F))$contrast
+
+# Model diagnostic plots
+library(ggplot2)
+ggplot(YR1, aes(x = TREATMENT, y = NUMBER_SCAPES)) + geom_boxplot() + geom_jitter(width = .2)
+
+par(mfrow = c(1, 2)) # necessary to get two plots next to each other
+plot(model_1, which = c(2, 5)) # there are several diagnostic plots that R can make. For simple experiments, these two are good.
+
+# t-test
+t.test(CONTROL_YR1, DIG_YR1, paired = T)
+```
+```{r}
+# YR1, RATIO_FL
+YR1 <- subset(data_1, YR_POST_HARVEST == 1, select = c(TREATMENT, RATIO_FL, PLOT_ID))
+CONTROL_YR1 <- YR1$RATIO_FL[YR1$TREATMENT == "C"]
+DIG_YR1 <- YR1$RATIO_FL[YR1$TREATMENT == "T"]
+
+library(emmeans)
+# YR1$NUMBER_SCAPES <- log(YR1$NUMBER_SCAPES)
+YR1$PLOT_ID <- as.character(YR1$PLOT_ID)
+model_1 <- lm(RATIO_FL ~ TREATMENT, data = YR1) # fit the model
+
+# model with treatment differences
+differences_model1 <- emmeans(model_1, pairwise~TREATMENT) # `pairwise~Variety` means calculate all pairwise differences among varieties
+summary(differences_model1, level = 0.90, infer = c(T, F))$contrast
+
+# Model diagnostic plots
+library(ggplot2)
+ggplot(YR1, aes(x = TREATMENT, y = RATIO_FL)) + geom_boxplot() + geom_jitter(width = .2)
+
+par(mfrow = c(1, 2)) # necessary to get two plots next to each other
+plot(model_1, which = c(2, 5)) # there are several diagnostic plots that R can make. For simple experiments, these two are good.
+
+# t-test
+t.test(CONTROL_YR1, DIG_YR1, paired = T)
+```
+
+```{r}
+# YR2, RATIO_FL
+YR2 <- subset(data_1, YR_POST_HARVEST == 2, select = c(TREATMENT, RATIO_FL, PLOT_ID))
+CONTROL_YR2 <- YR1$RATIO_FL[YR2$TREATMENT == "C"]
+DIG_YR2 <- YR1$RATIO_FL[YR2$TREATMENT == "T"]
+
+library(emmeans)
+# YR1$NUMBER_SCAPES <- log(YR1$NUMBER_SCAPES)
+YR2$PLOT_ID <- as.character(YR2$PLOT_ID)
+model_1 <- lm(RATIO_FL ~ TREATMENT, data = YR2) # fit the model
+
+# model with treatment differences
+differences_model1 <- emmeans(model_1, pairwise~TREATMENT) # `pairwise~Variety` means calculate all pairwise differences among varieties
+summary(differences_model1, level = 0.90, infer = c(T, F))$contrast
+
+# Model diagnostic plots
+library(ggplot2)
+ggplot(YR2, aes(x = TREATMENT, y = RATIO_FL)) + geom_boxplot() + geom_jitter(width = .2)
+
+par(mfrow = c(1, 2)) # necessary to get two plots next to each other
+plot(model_1, which = c(2, 5)) # there are several diagnostic plots that R can make. For simple experiments, these two are good.
+
+# t-test
+t.test(CONTROL_YR2, DIG_YR2, paired = T)
+```
+
+```{r}
+# YR2, RATIO_FL
+YR3 <- subset(data_1, YR_POST_HARVEST == 3, select = c(TREATMENT, RATIO_FL, PLOT_ID))
+CONTROL_YR3 <- YR3$RATIO_FL[YR3$TREATMENT == "C"]
+DIG_YR3 <- YR3$RATIO_FL[YR3$TREATMENT == "T"]
+
+library(emmeans)
+# YR1$NUMBER_SCAPES <- log(YR1$NUMBER_SCAPES)
+YR3$PLOT_ID <- as.character(YR3$PLOT_ID)
+model_1 <- lm(RATIO_FL ~ TREATMENT, data = YR3) # fit the model
+
+# model with treatment differences
+differences_model1 <- emmeans(model_1, pairwise~TREATMENT) # `pairwise~Variety` means calculate all pairwise differences among varieties
+summary(differences_model1, level = 0.90, infer = c(T, F))$contrast
+
+# Model diagnostic plots
+library(ggplot2)
+ggplot(YR3, aes(x = TREATMENT, y = RATIO_FL)) + geom_boxplot() + geom_jitter(width = .2)
+
+par(mfrow = c(1, 2)) # necessary to get two plots next to each other
+plot(model_1, which = c(2, 5)) # there are several diagnostic plots that R can make. For simple experiments, these two are good.
+
+# t-test
+t.test(CONTROL_YR3, DIG_YR3, paired = T)
+```
+
+
+```{r}
+# YR2, NUMBER_CAMAS
+YR2 <- subset(data_1, YR_POST_HARVEST == 2, select = c(TREATMENT, NUMBER_CAMAS, PLOT_ID))
+CONTROL_YR2 <- YR2$NUMBER_CAMAS[YR2$TREATMENT == "C"]
+DIG_YR2 <- YR2$NUMBER_CAMAS[YR2$TREATMENT == "T"]
+
+library(emmeans)
+YR2$PLOT_ID <- as.character(YR2$PLOT_ID)
+model_1 <- lm(NUMBER_CAMAS ~ TREATMENT, data = YR2) # fit the model
+
+# model with treatment differences
+differences_model1 <- emmeans(model_1, pairwise~TREATMENT) # `pairwise~Variety` means calculate all pairwise differences among varieties
+summary(differences_model1, level = 0.90, infer = c(T, F))$contrast
+
+# Model diagnostic plots
+library(ggplot2)
+ggplot(YR2, aes(x = TREATMENT, y = NUMBER_CAMAS)) + geom_boxplot() + geom_jitter(width = .2)
+
+par(mfrow = c(1, 2)) # necessary to get two plots next to each other
+plot(model_1, which = c(2, 5)) # there are several diagnostic plots that R can make. For simple experiments, these two are good.
+
+# t-test
+t.test(CONTROL_YR2, DIG_YR2, paired = T)
+```
+
+```{r}
+# YR2, NUMBER_SCAPES
+YR2 <- subset(data_1, YR_POST_HARVEST == 2, select = c(TREATMENT, NUMBER_SCAPES, PLOT_ID))
+CONTROL_YR2 <- YR2$NUMBER_SCAPES[YR2$TREATMENT == "C"]
+DIG_YR2 <- YR2$NUMBER_SCAPES[YR2$TREATMENT == "T"]
+
+library(emmeans)
+YR2$PLOT_ID <- as.character(YR2$PLOT_ID)
+model_1 <- lm(NUMBER_SCAPES ~ TREATMENT, data = YR2) # fit the model
+
+# model with treatment differences
+differences_model1 <- emmeans(model_1, pairwise~TREATMENT) # `pairwise~Variety` means calculate all pairwise differences among varieties
+summary(differences_model1, level = 0.90, infer = c(T, F))$contrast
+
+# Model diagnostic plots
+library(ggplot2)
+ggplot(YR2, aes(x = TREATMENT, y = NUMBER_SCAPES)) + geom_boxplot() + geom_jitter(width = .2)
+
+par(mfrow = c(1, 2)) # necessary to get two plots next to each other
+plot(model_1, which = c(2, 5)) # there are several diagnostic plots that R can make. For simple experiments, these two are good.
+
+# t-test
+t.test(CONTROL_YR2, DIG_YR2, paired = T)
+```
+
+```{r}
+# YR3, NUMBER_CAMAS
+YR3 <- subset(data_1, YR_POST_HARVEST == 3, select = c(TREATMENT, NUMBER_CAMAS, PLOT_ID))
+CONTROL_YR3 <- YR3$NUMBER_CAMAS[YR3$TREATMENT == "C"]
+DIG_YR3 <- YR3$NUMBER_CAMAS[YR3$TREATMENT == "T"]
+
+library(emmeans)
+YR3$PLOT_ID <- as.character(YR3$PLOT_ID)
+model_1 <- lm(NUMBER_CAMAS ~ TREATMENT, data = YR3) # fit the model
+
+# model with treatment differences
+differences_model1 <- emmeans(model_1, pairwise~TREATMENT) # `pairwise~Variety` means calculate all pairwise differences among varieties
+summary(differences_model1, level = 0.90, infer = c(T, F))$contrast
+
+# Model diagnostic plots
+library(ggplot2)
+ggplot(YR3, aes(x = TREATMENT, y = NUMBER_CAMAS)) + geom_boxplot() + geom_jitter(width = .2)
+
+par(mfrow = c(1, 2)) # necessary to get two plots next to each other
+plot(model_1, which = c(2, 5)) # there are several diagnostic plots that R can make. For simple experiments, these two are good.
+
+# t-test
+t.test(CONTROL_YR3, DIG_YR3, paired = T)
+```
+
+```{r}
+# YR3, NUMBER_SCAPES
+YR3 <- subset(data_1, YR_POST_HARVEST == 3, select = c(TREATMENT, NUMBER_SCAPES, PLOT_ID))
+CONTROL_YR3 <- YR3$NUMBER_SCAPES[YR3$TREATMENT == "C"]
+DIG_YR3 <- YR3$NUMBER_SCAPES[YR3$TREATMENT == "T"]
+
+library(emmeans)
+# YR3$NUMBER_SCAPES <- log(YR3$NUMBER_SCAPES)
+YR3$PLOT_ID <- as.character(YR3$PLOT_ID)
+model_1 <- lm(NUMBER_SCAPES ~ TREATMENT, data = YR3) # fit the model
+
+# model with treatment differences
+differences_model1 <- emmeans(model_1, pairwise~TREATMENT) # `pairwise~Variety` means calculate all pairwise differences among varieties
+summary(differences_model1, level = 0.90, infer = c(T, F))$contrast
+
+# Model diagnostic plots
+library(ggplot2)
+ggplot(YR3, aes(x = TREATMENT, y = NUMBER_SCAPES)) + geom_boxplot() + geom_jitter(width = .2)
+
+par(mfrow = c(1, 2)) # necessary to get two plots next to each other
+plot(model_1, which = c(2, 5)) # there are several diagnostic plots that R can make. For simple experiments, these two are good.
+
+# t-test
+t.test(CONTROL_YR3, DIG_YR3, paired = T)
+```
+
+```{r}
+# Mean number of leaves
+# YR1
+LVS <- subset(data_1, YR_POST_HARVEST == 1, select = c(TREATMENT, AVG_LVS, PLOT_ID))
+CONTROL_YR1 <- LVS$AVG_LVS[LVS$TREATMENT == "C"]
+DIG_YR1 <- LVS$AVG_LVS[LVS$TREATMENT == "T"]
+
+library(emmeans)
+# YR3$NUMBER_SCAPES <- log(YR3$NUMBER_SCAPES)
+LVS$PLOT_ID <- as.character(LVS$PLOT_ID)
+model_1 <- lm(AVG_LVS ~ TREATMENT, data = LVS) # fit the model
+
+# model with treatment differences
+differences_model1 <- emmeans(model_1, pairwise~TREATMENT) # `pairwise~Variety` means calculate all pairwise differences among varieties
+summary(differences_model1, level = 0.90, infer = c(T, F))$contrast
+
+# Model diagnostic plots
+library(ggplot2)
+ggplot(LVS, aes(x = TREATMENT, y = AVG_LVS)) + geom_boxplot() + geom_jitter(width = .2)
+
+par(mfrow = c(1, 2)) # necessary to get two plots next to each other
+plot(model_1, which = c(2, 5)) # there are several diagnostic plots that R can make. For simple experiments, these two are good.
+
+# t-test
+t.test(CONTROL_YR1, DIG_YR1, paired = T)
+```
+```{r}
+# Mean number of leaves
+# YR2
+LVS <- subset(data_1, YR_POST_HARVEST == 2, select = c(TREATMENT, AVG_LVS, PLOT_ID))
+CONTROL_YR2 <- LVS$AVG_LVS[LVS$TREATMENT == "C"]
+DIG_YR2 <- LVS$AVG_LVS[LVS$TREATMENT == "T"]
+
+library(emmeans)
+# YR3$NUMBER_SCAPES <- log(YR3$NUMBER_SCAPES)
+LVS$PLOT_ID <- as.character(LVS$PLOT_ID)
+model_1 <- lm(AVG_LVS ~ TREATMENT, data = LVS) # fit the model
+
+# model with treatment differences
+differences_model1 <- emmeans(model_1, pairwise~TREATMENT) # `pairwise~Variety` means calculate all pairwise differences among varieties
+summary(differences_model1, level = 0.90, infer = c(T, F))$contrast
+
+# Model diagnostic plots
+library(ggplot2)
+ggplot(LVS, aes(x = TREATMENT, y = AVG_LVS)) + geom_boxplot() + geom_jitter(width = .2)
+
+par(mfrow = c(1, 2)) # necessary to get two plots next to each other
+plot(model_1, which = c(2, 5)) # there are several diagnostic plots that R can make. For simple experiments, these two are good.
+
+# t-test
+t.test(CONTROL_YR2, DIG_YR2, paired = T)
+```
+
+```{r}
+# Mean number of leaves, YR3
+LVS <- subset(data_1, YR_POST_HARVEST == 3, select = c(TREATMENT, AVG_LVS, PLOT_ID))
+CONTROL_YR3 <- LVS$AVG_LVS[LVS$TREATMENT == "C"]
+DIG_YR3 <- LVS$AVG_LVS[LVS$TREATMENT == "T"]
+
+library(emmeans)
+# YR3$NUMBER_SCAPES <- log(YR3$NUMBER_SCAPES)
+LVS$PLOT_ID <- as.character(LVS$PLOT_ID)
+model_1 <- lm(AVG_LVS ~ TREATMENT, data = LVS) # fit the model
+
+# model with treatment differences
+differences_model1 <- emmeans(model_1, pairwise~TREATMENT) # `pairwise~Variety` means calculate all pairwise differences among varieties
+summary(differences_model1, level = 0.90, infer = c(T, F))$contrast
+
+# Model diagnostic plots
+library(ggplot2)
+ggplot(LVS, aes(x = TREATMENT, y = AVG_LVS)) + geom_boxplot() + geom_jitter(width = .2)
+
+par(mfrow = c(1, 2)) # necessary to get two plots next to each other
+plot(model_1, which = c(2, 5)) # there are several diagnostic plots that R can make. For simple experiments, these two are good.
+
+# t-test
+t.test(CONTROL_YR3, DIG_YR3, paired = T)
+```
+
+
+## Calculate the power of the test
+```{r}
+power.t.test(n = 12, power = 0.9, sd = 4, sig.level = 0.1)
+```
+```{r}
+# Plots
+data_1 <- subset(data_1, PLOT_NUMBER != 10, select = c(PLOT_NUMBER, TREATMENT, NUMBER_CAMAS, PLOT_ID, AVG_LVS, AVG_FL, NUMBER_SCAPES, YR_POST_HARVEST))
+
+## Number Camas in each treatment
+TRT <- subset(data_1, TREATMENT == "T", select = c(NUMBER_CAMAS, YR_POST_HARVEST))
+plot(TRT$YR_POST_HARVEST, TRT$NUMBER_CAMAS)
+
+# number scapes in each treatment
+TRT <- subset(data_1, TREATMENT == "C", select = c(NUMBER_SCAPES, YR_POST_HARVEST))
+plot(TRT$YR_POST_HARVEST, TRT$NUMBER_SCAPES)
+
+# AVG NUMBER FLOWERS
+TRT <- subset(data_1, TREATMENT == "T", select = c(AVG_LVS, YR_POST_HARVEST))
+plot(TRT$YR_POST_HARVEST, TRT$AVG_LVS)
+abline(lm(TRT$AVG_LVS~TRT$YR_POST_HARVEST))
+
+TRT <- subset(data_1, TREATMENT == "C", select = c(AVG_LVS, YR_POST_HARVEST))
+plot(TRT$YR_POST_HARVEST, TRT$AVG_LVS)
+abline(lm(TRT$AVG_LVS~TRT$YR_POST_HARVEST))
+
+DIG_YR1 <- TRT$AVG_LVS[TRT$YR_POST_HARVEST == "1"]
+DIG_YR2 <- TRT$AVG_LVS[TRT$YR_POST_HARVEST == "2"]
+DIG_YR3 <- TRT$AVG_LVS[TRT$YR_POST_HARVEST == "3"]
+
+CTL <- subset(data_1, TREATMENT == "C", select = c(AVG_LVS, YR_POST_HARVEST))
+CONTROL <- CTL$AVG_LVS
+CONTROL_YR1 <- CTL$AVG_LVS[CTL$YR_POST_HARVEST == "1"]
+CONTROL_YR2 <- CTL$AVG_LVS[CTL$YR_POST_HARVEST == "2"]
+CONTROL_YR3 <- CTL$AVG_LVS[CTL$YR_POST_HARVEST == "3"]
+
+boxplot(CONTROL_YR1, CONTROL_YR2, CONTROL_YR3)
+boxplot(DIG_YR1, DIG_YR2, DIG_YR3, CONTROL_YR1, CONTROL_YR2, CONTROL_YR3)
+```
+
+
+
+# Plots----------------
+## Main data
+```{r}
+#NUMBER_CAMAS
+# Diagnostic plots
+## NOT NORMAL
+op = par(mfrow=c(1,2))
+plot(camas.mod.NUMBER_CAMAS,which = c(2,3))
+
+# blox plot
+ggplot(camas.data, mapping = aes(x = YR_TRT, y = NUMBER_CAMAS)) + geom_boxplot() + geom_jitter(width = 0.2)
+
+# violin plot
+ggplot(camas.data, mapping = aes(x = YR_TRT, y = NUMBER_CAMAS)) + geom_violin(bw = 5) + geom_jitter(width = 0.2)
+```
+
+```{r}
+#NUMBER_SCAPES
+# Diagnostic plots
+## Normality looks good; some heterogeneity of variances
+op = par(mfrow=c(1,2))
+plot(camas.mod.NUMBER_SCAPES,which = c(2,3))
+
+# blox plot
+ggplot(camas.data, mapping = aes(x = YR_TRT, y = NUMBER_SCAPES)) + geom_boxplot() + geom_jitter(width = 0.2)
+
+# violin plot
+ggplot(camas.data, mapping = aes(x = YR_TRT, y = NUMBER_SCAPES)) + geom_violin(bw = 5) + geom_jitter(width = 0.2)
+```
+
+```{r}
+# AVG_LVS
+# Diagnostic plots
+## looks good
+op = par(mfrow=c(1,2))
+plot(camas.mod.AVG_LVS,which = c(2,3))
+
+# blox plot
+ggplot(camas.data, mapping = aes(x = YR_TRT, y = AVG_LVS)) + geom_boxplot() + geom_jitter(width = 0.2)
+
+# violin plot
+ggplot(camas.data, mapping = aes(x = YR_TRT, y = AVG_LVS)) + geom_violin(bw = 0.5) + geom_jitter(width = 0.2)
+```
+
+```{r}
+# AVG_FL
+# Diagnostic plots
+## Looks good
+op = par(mfrow=c(1,2))
+plot(camas.mod.AVG_FL,which = c(2,3))
+
+# blox plot
+ggplot(camas.data, mapping = aes(x = YR_TRT, y = AVG_FL)) + geom_boxplot() + geom_jitter(width = 0.2)
+
+# violin plot
+ggplot(camas.data, mapping = aes(x = YR_TRT, y = AVG_FL)) + geom_violin(bw = 1.5) + geom_jitter(width = 0.2)
+```
+
+```{r}
+# RATIO_FL
+# Diagnostic plots
+# NOT normally distributed because of NUMBER_CAMAS
+op = par(mfrow=c(1,2))
+plot(camas.mod.NUMBER_CAMAS,which = c(2,3))
+# blox plot
+ggplot(camas.data, mapping = aes(x = YR_TRT, y = RATIO_FL)) + geom_boxplot() + geom_jitter(width = 0.2)
+
+# violin plot
+ggplot(camas.data, mapping = aes(x = YR_TRT, y = RATIO_FL)) + geom_violin(bw = 0.5) + geom_jitter(width = 0.2)
+```
+## Difference between paired C and T, by year
+
+#ANOVA-----------------
+## Main data
+```{r}
+camas.data <- data_1 %>%
+  select(NUMBER_CAMAS, NUMBER_SCAPES, AVG_LVS, AVG_FL, TREATMENT, PLOT_ID, YR_POST_HARVEST, RATIO_FL, PLOT_NUMBER) %>%
+  mutate(YR_TRT = paste(TREATMENT, YR_POST_HARVEST))
+
+# Not significant: NUMBER_CAMAS and AVG_FL
+camas.mod.NUMBER_CAMAS <- lm(NUMBER_CAMAS ~ YR_TRT, data = camas.data)
+anova(camas.mod.NUMBER_CAMAS)
+
+camas.mod.AVG_FL <- lm(AVG_FL ~ YR_TRT, data = camas.data)
+anova(camas.mod.AVG_FL)
+
+# Significant: NUMBER_SCAPES, AVG_LVS, RATIO_FL
+camas.mod.NUMBER_SCAPES <- lm(NUMBER_SCAPES ~ YR_TRT, data = camas.data)
+anova(camas.mod.NUMBER_SCAPES)
+
+camas.mod.AVG_LVS <- lm(AVG_LVS ~ YR_TRT, data = camas.data)
+anova(camas.mod.AVG_LVS)
+
+camas.mod.RATIO_FL <- lm(RATIO_FL ~ YR_TRT, data = camas.data)
+anova(camas.mod.RATIO_FL)
+```
+
+## Difference between paired C and T, by year
+### Set up the paired differences
+```{r}
+# IF PLOT_ID in one row = PLOT_ID in another row, THEN subtract the response value from the T row from the C row. How???
+
+## The following doesn't work because plots don't necessarily add up.
+## YR1
+camas <- data_1 %>% 
+  filter(YR_POST_HARVEST == 1) %>% 
+  select(PLOT_ID, TREATMENT, PLOT_NUMBER, NUMBER_CAMAS, AVG_FL, NUMBER_SCAPES, RATIO_FL, AVG_LVS) 
+
+PLOT_NUM_DIFF <- camas$PLOT_NUMBER[1:11]
+NUM_CAMAS_C <- camas$NUMBER_CAMAS[1:11] 
+NUM_CAMAS_T <- camas$NUMBER_CAMAS[12:22]
+NUM_SCAPES_C <- camas$NUMBER_SCAPES[1:11]
+NUM_SCAPES_T <- camas$NUMBER_SCAPES[12:22]
+AVG_LVS_C <- camas$AVG_LVS[1:11]
+AVG_LVS_T <- camas$AVG_LVS[12:22]
+AVG_FL_C <- camas$AVG_FL[1:11]
+AVG_FL_T <- camas$AVG_FL[12:22]  
+RATIO_FL_C <- camas$AVG_FL[1:11]
+RATIO_FL_T <- camas$AVG_FL[12:22] 
+
+NUM_CAMAS_DIFF1 <- NUM_CAMAS_C - NUM_CAMAS_T
+NUM_SCAPES_DIFF1 <- NUM_SCAPES_C - NUM_SCAPES_T
+AVG_LVS_DIFF1 <- AVG_LVS_C - AVG_LVS_T
+AVG_FL_DIFF1 <- AVG_FL_C - AVG_FL_T
+RATIO_FL_DIFF1 <- RATIO_FL_C - RATIO_FL_T
+
+## YR2
+camas <- data_1 %>% 
+  filter(YR_POST_HARVEST == 2) %>% 
+  select(PLOT_ID, TREATMENT, PLOT_NUMBER, NUMBER_CAMAS, AVG_FL, NUMBER_SCAPES, RATIO_FL, AVG_LVS) %>% 
+  arrange(TREATMENT)
+
+PLOT_NUM_DIFF <- camas$PLOT_NUMBER[1:11]
+NUM_CAMAS_C <- camas$NUMBER_CAMAS[1:11] 
+NUM_CAMAS_T <- camas$NUMBER_CAMAS[12:22]
+NUM_SCAPES_C <- camas$NUMBER_SCAPES[1:11]
+NUM_SCAPES_T <- camas$NUMBER_SCAPES[12:22]
+AVG_LVS_C <- camas$AVG_LVS[1:11]
+AVG_LVS_T <- camas$AVG_LVS[12:22]
+AVG_FL_C <- camas$AVG_FL[1:11]
+AVG_FL_T <- camas$AVG_FL[12:22]  
+RATIO_FL_C <- camas$AVG_FL[1:11]
+RATIO_FL_T <- camas$AVG_FL[12:22] 
+
+NUM_CAMAS_DIFF2 <- NUM_CAMAS_C - NUM_CAMAS_T
+NUM_SCAPES_DIFF2 <- NUM_SCAPES_C - NUM_SCAPES_T
+AVG_LVS_DIFF2 <- AVG_LVS_C - AVG_LVS_T
+AVG_FL_DIFF2 <- AVG_FL_C - AVG_FL_T
+RATIO_FL_DIFF2 <- RATIO_FL_C - RATIO_FL_T
+
+## YR3
+camas <- data_1 %>% 
+  filter(YR_POST_HARVEST == 3) %>% 
+  select(PLOT_ID, TREATMENT, PLOT_NUMBER, NUMBER_CAMAS, AVG_FL, NUMBER_SCAPES, RATIO_FL, AVG_LVS) 
+
+PLOT_NUM_DIFF <- camas$PLOT_NUMBER[1:9]
+NUM_CAMAS_C <- camas$NUMBER_CAMAS[1:9] 
+NUM_CAMAS_T <- camas$NUMBER_CAMAS[10:18]
+NUM_SCAPES_C <- camas$NUMBER_SCAPES[1:9]
+NUM_SCAPES_T <- camas$NUMBER_SCAPES[10:18]
+AVG_LVS_C <- camas$AVG_LVS[1:9]
+AVG_LVS_T <- camas$AVG_LVS[10:18]
+AVG_FL_C <- camas$AVG_FL[1:9]
+AVG_FL_T <- camas$AVG_FL[10:18]  
+RATIO_FL_C <- camas$AVG_FL[1:9]
+RATIO_FL_T <- camas$AVG_FL[10:18] 
+
+NUM_CAMAS_DIFF3 <- NUM_CAMAS_C - NUM_CAMAS_T
+NUM_SCAPES_DIFF3 <- NUM_SCAPES_C - NUM_SCAPES_T
+AVG_LVS_DIFF3 <- AVG_LVS_C - AVG_LVS_T
+AVG_FL_DIFF3 <- AVG_FL_C - AVG_FL_T
+RATIO_FL_DIFF3 <- RATIO_FL_C - RATIO_FL_T
+
+diff <- data.frame(PLOT_NUM_DIFF, NUM_CAMAS_DIFF1, NUM_SCAPES_DIFF1, AVG_LVS_DIFF1, AVG_FL_DIFF1, RATIO_FL_DIFF1, NUM_CAMAS_DIFF2, NUM_SCAPES_DIFF2, AVG_LVS_DIFF2, AVG_FL_DIFF2, RATIO_FL_DIFF2, NUM_CAMAS_DIFF3, NUM_SCAPES_DIFF3, AVG_LVS_DIFF3, AVG_FL_DIFF3, RATIO_FL_DIFF3)
+
+```
+```{r}
+diff_mod <- lm(NUM_CAMAS_DIFF ~ YEAR, diff)
+```
+
+### testing differences between paired plots, YR1
+
+```{r}
+# plot
+plot(diff_YR1)
+ggplot(NUM_CAMAS_DIFF, mapping = aes(x = YR_TRT, y = AVG_FL)) + geom_boxplot() + geom_jitter(width = 0.2)
+
+# violin plot
+ggplot(camas.data, mapping = aes(x = YR_TRT, y = AVG_FL)) + geom_violin(bw = 1.5) + geom_jitter(width = 0.2)
+
+
+
+
+# model: number camas
+diff_mod_CAMAS <- lm(NUM_CAMAS_DIFF ~ TREATMENT, diff_YR1)
+op = par(mfrow=c(1,2))
+plot(diff_mod_CAMAS,which = c(2,3))
+
+diff_mod_CAMAS
+
+# model: number scapes
+diff_mod_SCAPES <- lm(NUM_SCAPES_DIFF ~ PLOT_NUM_DIFF, diff_YR1)
+op = par(mfrow=c(1,2))
+plot(diff_mod_SCAPES,which = c(2,3))
+
+# model: number camas
+diff_mod_LVS <- lm(AVG_LVS_DIFF ~ PLOT_NUM_DIFF, diff_YR1)
+op = par(mfrow=c(1,2))
+plot(diff_mod_LVS,which = c(2,3))
+
+# model: number camas
+diff_mod_AVG_FL <- lm(AVG_FL_DIFF ~ PLOT_NUM_DIFF, diff_YR1)
+op = par(mfrow=c(1,2))
+plot(diff_mod_AVG_FL ,which = c(2,3))
+
+# model: number camas
+diff_mod_RATIO_FL <- lm(RATIO_FL_DIFF ~ PLOT_NUM_DIFF, diff_YR1)
+op = par(mfrow=c(1,2))
+plot(diff_mod_RATIO_FL,which = c(2,3))
+
+
+```
+
+```{r}
+diff_camas = emmeans(diff_mod_CAMAS,pairwise~NUM_CAMAS_DIFF)
+summary(diff_camas,level = 0.95,infer = c(T,T))$contrast
+
+diff_camas = emmeans(diff_mod_SCAPES,pairwise~Drug)
+summary(diff_camas,level = 0.95,infer = c(T,T))$contrast
+
+diff_camas = emmeans(diff_mod_LVS,pairwise~Drug)
+summary(diff_camas,level = 0.95,infer = c(T,T))$contrast
+
+diff_camas = emmeans(diff_mod_AVG_FL,pairwise~Drug)
+summary(diff_camas,level = 0.95,infer = c(T,T))$contrast
+
+diff_camas = emmeans(diff_mod_RATIO_FL,pairwise~Drug)
+summary(diff_camas,level = 0.95,infer = c(T,T))$contrast
+
+```
+
+
+#t-tests
+```{r}
+# NUMBER_SCAPES : significant:
+all_differences <- emmeans(camas.mod.NUMBER_SCAPES, pairwise~YR_TRT)
+contrast(all_differences)
+as.data.frame(contrast(all_differences)$contrasts) %>%
+  filter(p.value < 0.05)
+
+# AVG_LVS : significant:
+all_differences <- emmeans(camas.mod.AVG_LVS, pairwise~YR_TRT)
+contrast(all_differences)
+as.data.frame(contrast(all_differences)$contrasts) %>%
+  filter(p.value < 0.05)
+```
+
+```{r}
+
+```
+
